@@ -8,8 +8,6 @@ FAMPP is an ultra-fast, portable, and fully isolated local web development envir
 
 Designed for developers who are tired of clunky installation wizards, bloated registry entries, and restrictive WAF/CDN download walls from corporate entities. FAMPP runs everything within its own self-contained directory without installing any global dependencies on your host operating system.
 
-
-
 ## 🧠 The Philosophy
 
 Traditional stacks like XAMPP or Docker can be overkill, resource-heavy, and prone to system conflicts. FAMPP takes a different approach:
@@ -51,27 +49,24 @@ cargo run -- install php
 cargo run -- install mysql
 cargo run -- install adminer
 ```
-
-# 🚀 Usage Guide
+## 🚀 Usage Guide
 FAMPP's CLI is designed to be intuitive and fast.
-## Start your services:
+### Start your services:
 ```bash
 cargo run -- start php
 cargo run -- start mysql
 ```
 *PHP will serve files from ~/.fampp/www at http://127.0.0.1:8000*
 *MySQL will run locally on port 3306 with user root and no password.*
-
-## Access the Database Manager:
+### Access the Database Manager:
 Navigate to http://127.0.0.1:8000/adminer.php in your browser.
 
-## Check System Status:
+### Check System Status:
 View running services, their PIDs, and uptime.
 ```bash
 cargo run -- status
 ```
-
-## Real-Time Log Monitoring:
+### Real-Time Log Monitoring:
 Watch your background daemon logs live to catch errors instantly.
 ```bash
 cargo run -- logs mysql
@@ -107,8 +102,8 @@ FAMPP keeps your system clean by confining everything to a single hidden directo
 
 [ ] Local Tunneling: Securely expose your local environment to the internet for webhook testing.
 
-# 🤝 Contributing
+# 🤝 Contributing
 FAMPP is an open-source initiative aimed at improving developer quality of life. Pull Requests, bug reports, and feature requests are highly welcome!
 
-# 📄 License
+# 📄 License
 This project is licensed under the MIT License - see the LICENSE file for details.
