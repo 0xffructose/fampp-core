@@ -37,7 +37,7 @@ Since FAMPP is built with Rust, you can compile and run it directly using Cargo.
 
 ### 1. Clone & Build
 ```bash
-git clone [https://github.com/YOUR_USERNAME/fampp.git](https://github.com/YOUR_USERNAME/fampp.git)
+git clone [https://github.com/0xffructose/fampp-core.git](https://github.com/0xffructose/fampp-core.git)
 cd fampp
 cargo build --release
 ```
