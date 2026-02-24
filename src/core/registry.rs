@@ -40,14 +40,14 @@ pub fn get_package_info(package_name: &str, _version: &str) -> Option<PackageInf
         "mysql" => {
             let (url, bin_name) = match os {
                 "windows" => (
-                    "https://github.com/0xffructose/fampp/releases/download/MySQL_LTS/mysql-8.4.8-winx64.zip",
+                    "https://github.com/0xffructose/fampp-core/releases/download/BinaryUpdate/mysql-8.4.8-winx64.zip",
                     "mysqld.exe"
                 ),
                 "macos" => {
                     let mac_url = if arch == "aarch64" {
-                        "https://github.com/0xffructose/fampp/releases/download/MySQL_LTS/mysql-8.4.8-macos15-arm64.tar.gz"
+                        "https://github.com/0xffructose/fampp-core/releases/download/BinaryUpdate/mysql-8.4.8-macos15-arm64.tar.gz"
                     } else {
-                        "https://github.com/0xffructose/fampp/releases/download/MySQL_LTS/mysql-8.4.8-macos15-x86_64.tar.gz"
+                        "https://github.com/0xffructose/fampp-core/releases/download/BinaryUpdate/mysql-8.4.8-macos15-x86_64.tar.gz"
                     };
                     (mac_url, "mysqld")
                 },
