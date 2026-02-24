@@ -1,40 +1,114 @@
-FAMPP (Fast AMPP Stack) is an ultra-fast, portable, and isolated local development environment written from scratch in Rust to ensure bare-metal performance. It eliminates the friction of traditional installation wizards and prevents system registry pollution by operating as a completely self-contained stack.
+# 🚀 FAMPP (Fast AMPP Stack)
 
-#### ✨ Key Features
+![Rust](https://img.shields.io/badge/Built_with-Rust-f34b7d.svg?style=flat-square&logo=rust)
+![License](https://img.shields.io/badge/License-MIT-blue.svg?style=flat-square)
+![Platform](https://img.shields.io/badge/Platform-macOS%20%7C%20Windows%20%7C%20Linux-lightgrey.svg?style=flat-square)
 
-* **The Power of Rust Architecture:**  Engineered for bare-metal performance with negligible RAM consumption, instant response times, and zero external dependencies.  
-* **Private Registry (Our Own Rules):**  Bypasses restrictive WAF/CDN download walls—such as those imposed by Oracle—via a secure GitHub-based CDN for streamlined, pre-compiled asset delivery.  
-* **Isolated Environment:**  Ensures the host system remains clutter-free by encapsulating all projects, databases, and configurations within the \~/.fampp directory.  
-* **Real-time Log Tailer:**  Provides terminal-native monitoring for background services, offering instant, live visibility into the environment's internal state.
+FAMPP is an ultra-fast, portable, and fully isolated local web development environment (Local Development Stack) engineered entirely from scratch in Rust. 
 
-#### 🛠 Technical Architecture
+Designed for developers who are tired of clunky installation wizards, bloated registry entries, and restrictive WAF/CDN download walls from corporate entities. FAMPP runs everything within its own self-contained directory without installing any global dependencies on your host operating system.
 
-The FAMPP core is developed 100% in Rust to provide maximum execution speed and seamless portability across macOS, Windows, and Linux. By decoupling the stack from the operating system's global configuration, FAMPP provides a predictable environment for local development.
 
-##### Project Composition
 
-Component,Description  
-Language,Rust (100%)  
-Environment Path,\~/.fampp (Self-contained)  
-Release Assets,MySQL LTS Binaries
+## 🧠 The Philosophy
 
-#### 🚀 Getting Started
+Traditional stacks like XAMPP or Docker can be overkill, resource-heavy, and prone to system conflicts. FAMPP takes a different approach:
+* **Zero Global Pollution:** Everything lives in `~/.fampp`. If you want to uninstall, you simply delete the folder.
+* **Anti-Corporate Bottlenecks:** Uses a Custom Private Registry to bypass frustrating Oracle WAFs and forced login screens, pulling clean, unmodified binaries directly from a high-speed CDN.
+* **Bare-Metal Performance:** Powered by a Rust CLI, ensuring negligible RAM consumption, instant CLI response times, and a footprint that makes heavy containers look obsolete.
 
-FAMPP is designed for terminal-centric simplicity. You can deploy and manage the entire stack using the following commands:  
-\# Download and install the FAMPP core  
-curl \-fsSL https://raw.githubusercontent.com/0xffructose/fampp-core/main/install.sh | sh
+## ✨ Key Features
 
-\# Initialize and start the development services  
-fampp start
+- **🦀 Rust-Powered CLI Engine:** A robust, memory-safe daemon and process manager that controls your entire stack with zero overhead.
+- **📦 Smart Downloader & Extractor:** Automatically detects your OS and architecture, downloads the correct binaries (like Apple Silicon vs. Intel), and extracts them intelligently.
+- **🐘 Portable PHP:** Runs a standalone, static PHP engine without interfering with your system's native binaries.
+- **🐬 WAF-Bypassed MySQL:** Automatically initializes a secure data directory on its first run (`--initialize-insecure`), entirely bypassing Oracle's download restrictions.
+- **🛠️ Adminer Integration:** Ships with Adminer, a lightning-fast, single-file alternative to phpMyAdmin for instant database management.
+- **🔍 Real-Time Log Tailer:** Stream background service logs (errors, access) directly to your terminal, just like a modern DevOps monitoring tool.
 
-#### 📂 Repository Overview
+## 🎯 Perfect For
 
-The codebase follows standard Rust conventions, organized for modularity and performance:
+- Developing rapid local APIs for modern frontends (Next.js, React, Vue).
+- Building robust, lightweight backends for Discord bots or Web3 platforms.
+- Creating local leaderboards, inventory systems, or backend APIs for custom game engines and Unity projects.
+- Developers who build systems from scratch and demand total control over their environment.
 
-* **src/** : Application source code, featuring the core logic for CLI subcommand routing and service orchestration.  
-* **Cargo.toml**  **&**  **Cargo.lock** : Manifests for Rust dependency management, defining the build lifecycle and ensuring reproducible environments.  
-* **README.md** : Primary project documentation.
+## 🛠️ Installation & Setup
 
-#### 📈 Project Status
+Since FAMPP is built with Rust, you can compile and run it directly using Cargo.
 
-This project is in active development and moving rapidly. Recent milestones include the initial release of pre-compiled MySQL LTS Binaries and a complete refactor of the internal binary routing logic. The current state reflects a high-velocity commit history focused on expanding core orchestration capabilities and refining system documentation.  
+### 1. Clone & Build
+```bash
+git clone [https://github.com/YOUR_USERNAME/fampp.git](https://github.com/YOUR_USERNAME/fampp.git)
+cd fampp
+cargo build --release
+```
+
+### 2. Install the Stack
+FAMPP will download and integrate the necessary binaries into its isolated environment.
+```bash
+cargo run -- install php
+cargo run -- install mysql
+cargo run -- install adminer
+```
+
+# 🚀 Usage Guide
+FAMPP's CLI is designed to be intuitive and fast.
+## Start your services:
+```bash
+cargo run -- start php
+cargo run -- start mysql
+```
+*PHP will serve files from ~/.fampp/www at http://127.0.0.1:8000*
+*MySQL will run locally on port 3306 with user root and no password.*
+
+## Access the Database Manager:
+Navigate to http://127.0.0.1:8000/adminer.php in your browser.
+
+## Check System Status:
+View running services, their PIDs, and uptime.
+```bash
+cargo run -- status
+```
+
+## Real-Time Log Monitoring:
+Watch your background daemon logs live to catch errors instantly.
+```bash
+cargo run -- logs mysql
+```
+
+# 🗂️ Architecture & Directory Structure
+FAMPP keeps your system clean by confining everything to a single hidden directory:
+```bash
+~/.fampp/
+├── data/
+│   └── mysql/         <-- Automatically generated MySQL database tables and system files
+├── logs/              <-- Real-time log files for background services (e.g., mysql.log)
+├── packages/
+│   ├── php/           <-- Isolated, static PHP binary
+│   └── mysql/         <-- Isolated MySQL engine
+└── www/
+    ├── adminer.php    <-- Single-file database manager
+    └── /your_project  <-- Your application code
+```
+
+# 🗺️ Roadmap
+[x] Core Rust Process Manager
+
+[x] Custom Package Registry & Downloader
+
+[x] PHP & MySQL Integration
+
+[x] Real-time Log Tailer
+
+[ ] Traffic Control: Nginx reverse proxy integration for custom .test local domains.
+
+[ ] Full-Stack Expansion: Portable Node.js integration for JavaScript ecosystems.
+
+[ ] Local Tunneling: Securely expose your local environment to the internet for webhook testing.
+
+# 🤝 Contributing
+FAMPP is an open-source initiative aimed at improving developer quality of life. Pull Requests, bug reports, and feature requests are highly welcome!
+
+# 📄 License
+This project is licensed under the MIT License - see the LICENSE file for details.
