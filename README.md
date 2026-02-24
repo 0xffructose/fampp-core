@@ -1,32 +1,40 @@
-# 🚀 FAMPP (Fast AMPP Stack)
+FAMPP (Fast AMPP Stack) is an ultra-fast, portable, and isolated local development environment written from scratch in Rust to ensure bare-metal performance. It eliminates the friction of traditional installation wizards and prevents system registry pollution by operating as a completely self-contained stack.
 
-FAMPP is an ultra-fast, portable, and completely isolated local web development environment (Local Development Stack) written from scratch in Rust.
+#### ✨ Key Features
 
-Say goodbye to clunky installation wizards, background services that pollute your system registry, or restrictive WAF/CDN download walls. FAMPP runs everything within its own directory without installing anything on your host operating system (macOS/Windows/Linux).
+* **The Power of Rust Architecture:**  Engineered for bare-metal performance with negligible RAM consumption, instant response times, and zero external dependencies.  
+* **Private Registry (Our Own Rules):**  Bypasses restrictive WAF/CDN download walls—such as those imposed by Oracle—via a secure GitHub-based CDN for streamlined, pre-compiled asset delivery.  
+* **Isolated Environment:**  Ensures the host system remains clutter-free by encapsulating all projects, databases, and configurations within the \~/.fampp directory.  
+* **Real-time Log Tailer:**  Provides terminal-native monitoring for background services, offering instant, live visibility into the environment's internal state.
 
-## ✨ Why FAMPP?
+#### 🛠 Technical Architecture
 
-- **🦀 The Power of Rust Architecture:** Negligible RAM consumption, instant response times, and zero dependencies.
-- **📦 Our Own Rules (Private Registry):** Bypasses the download walls of restrictive companies like Oracle by pulling packages directly from our own secure GitHub repository (CDN).
-- **⚡ Isolated Environment:** Your projects, databases, and configurations live in a single, self-contained folder (`~/.fampp`). It never clutters your computer.
-- **🔍 Real-time Log Tailer:** Just like modern DevOps tools, it allows you to monitor the logs of your background services instantly and live, right from your terminal.
+The FAMPP core is developed 100% in Rust to provide maximum execution speed and seamless portability across macOS, Windows, and Linux. By decoupling the stack from the operating system's global configuration, FAMPP provides a predictable environment for local development.
 
-## 🛠️ Installation & Usage
+##### Project Composition
 
-Using FAMPP is incredibly simple. Just run the following commands in your terminal:
+Component,Description  
+Language,Rust (100%)  
+Environment Path,\~/.fampp (Self-contained)  
+Release Assets,MySQL LTS Binaries
 
-```bash
-# Integrate services into the system (Installation)
-cargo run -- install php
-cargo run -- install mysql
-cargo run -- install adminer
+#### 🚀 Getting Started
 
-# Start the services
-cargo run -- start php
-cargo run -- start mysql
+FAMPP is designed for terminal-centric simplicity. You can deploy and manage the entire stack using the following commands:  
+\# Download and install the FAMPP core  
+curl \-fsSL https://raw.githubusercontent.com/0xffructose/fampp-core/main/install.sh | sh
 
-# Check the status of the services (Uptime, PID numbers)
-cargo run -- status
+\# Initialize and start the development services  
+fampp start
 
-# Monitor error and access logs in real-time
-cargo run -- logs mysql
+#### 📂 Repository Overview
+
+The codebase follows standard Rust conventions, organized for modularity and performance:
+
+* **src/** : Application source code, featuring the core logic for CLI subcommand routing and service orchestration.  
+* **Cargo.toml**  **&**  **Cargo.lock** : Manifests for Rust dependency management, defining the build lifecycle and ensuring reproducible environments.  
+* **README.md** : Primary project documentation.
+
+#### 📈 Project Status
+
+This project is in active development and moving rapidly. Recent milestones include the initial release of pre-compiled MySQL LTS Binaries and a complete refactor of the internal binary routing logic. The current state reflects a high-velocity commit history focused on expanding core orchestration capabilities and refining system documentation.  
