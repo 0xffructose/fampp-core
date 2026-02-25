@@ -3,10 +3,10 @@ mod core;
 use std::path::PathBuf;
 use std::path::Path;
 use std::fs;
+use std::io::{self, Write};
+use std::thread;
+use std::time::Duration;
 use colored::Colorize;
-use comfy_table::{Table, Cell, Color as TColor, Attribute};
-use comfy_table::presets::UTF8_FULL;
-use comfy_table::modifiers::UTF8_ROUND_CORNERS;
 use crate::core::process::ProcessManager;
 use crate::core::config::ConfigManager;
 use crate::core::settings::AppSettings;
@@ -260,50 +260,73 @@ async fn main() {
             }
         }
         Commands::Status => {
-            println!("{} {}", "🔍".cyan().bold(), i18n.t("status_fetching"));
+            print!("{} {}", "🔍".cyan().bold(), i18n.t("status_fetching"));
+            io::stdout().flush().unwrap();
+            
             let pm = ProcessManager::new(&config.base_path);
-
-            let mut table = Table::new();
-            table
-                .load_preset(UTF8_FULL)
-                .apply_modifier(UTF8_ROUND_CORNERS)
-                .set_header(vec![
-                    Cell::new(i18n.t("service")).add_attribute(Attribute::Bold).fg(TColor::Cyan),
-                    Cell::new(i18n.t("status")).add_attribute(Attribute::Bold).fg(TColor::Cyan),
-                    Cell::new("PID").add_attribute(Attribute::Bold).fg(TColor::Cyan),
-                    Cell::new(i18n.t("port_info")).add_attribute(Attribute::Bold).fg(TColor::Cyan),
-                ]);
-
+            
             let services = vec![
                 ("php", format!("127.0.0.1:{}+", app_settings.ports.php)), 
                 ("mysql", format!("127.0.0.1:{}", app_settings.ports.mysql))
             ];
 
             let mut any_running = false;
+            let mut active_rows = Vec::new();
 
             for (svc, info) in services {
                 let pid_file = pm.pids_dir.join(format!("{}.pid", svc));
                 
-                let mut status_cell = Cell::new("Stopped").fg(TColor::Red);
-                let mut pid_str = "-".to_string();
-
                 if pid_file.exists() {
                     if let Ok(pid_content) = std::fs::read_to_string(&pid_file) {
-                        status_cell = Cell::new("Active").fg(TColor::Green).add_attribute(Attribute::Bold);
-                        pid_str = pid_content.trim().to_string();
                         any_running = true;
+                        active_rows.push((
+                            svc.to_uppercase(),
+                            i18n.t("active"),
+                            pid_content.trim().to_string(),
+                            info,
+                        ));
                     }
                 }
-
-                table.add_row(vec![
-                    Cell::new(svc.to_uppercase()).add_attribute(Attribute::Bold),
-                    status_cell,
-                    Cell::new(pid_str).fg(TColor::Yellow),
-                    Cell::new(info),
-                ]);
             }
 
-            println!("\n{table}\n");
+            thread::sleep(Duration::from_millis(150));
+
+            print!("\r\x1b[2K");
+            io::stdout().flush().unwrap();
+
+            let v = "│".cyan(); 
+            
+            println!("{}", "┌──────────────┬──────────────┬─────────┬─────────────────────────┐".cyan());
+            
+            let h_svc = format!("{:<12}", i18n.t("service")).bold().cyan();
+            let h_stat = format!("{:<12}", i18n.t("status")).bold().cyan();
+            let h_pid = format!("{:<7}", "PID").bold().cyan();
+            let h_port = format!("{:<23}", i18n.t("port_info")).bold().cyan();
+            
+            println!("{} {} {} {} {} {} {} {} {}", 
+                v, h_svc, v, h_stat, v, h_pid, v, h_port, v
+            );
+            
+            println!("{}", "├──────────────┼──────────────┼─────────┼─────────────────────────┤".cyan());
+
+            if any_running {
+                for (svc, status, pid, info) in active_rows {
+                    let c_svc = format!("{:<12}", svc).bold();
+                    let c_stat = format!("{:<12}", status).bold().green();
+                    let c_pid = format!("{:<7}", pid).yellow();
+                    let c_port = format!("{:<23}", info);
+                    
+                    println!("{} {} {} {} {} {} {} {} {}", 
+                        v, c_svc, v, c_stat, v, c_pid, v, c_port, v
+                    );
+                }
+            } else {
+                let msg = i18n.t("no_active_services");
+                let empty_msg = format!("{:^65}", msg).bold().red();
+                println!("{}{}{}", v, empty_msg, v); 
+            }
+
+            println!("{}\n", "└──────────────┴──────────────┴─────────┴─────────────────────────┘".cyan());
 
             if any_running {
                 println!("💡 {} {}", i18n.t("tip_monitor"), "'cargo run -- logs <service>'".yellow());

@@ -20,12 +20,12 @@ pub fn t<'a>(&self, key: &'a str) -> &'a str {
                 "status_fetching" => "FAMPP ortam durumu getiriliyor...",
                 "active" => "Aktif",
                 "stopped" => "Durdu",
-                // --- YENİ EKLENEN TÜRKÇE KELİMELER ---
                 "service" => "Servis",
                 "status" => "Durum",
                 "port_info" => "Port / Bilgi",
                 "tip_monitor" => "Bir servisi izlemek için şunu kullanın:",
                 "tip_boot" => "Ortamınızı başlatmak için şunu kullanın:",
+                "no_active_services" => "Aktif bir servis yok",
                 _ => key,
             },
             _ => match key { 
@@ -37,12 +37,12 @@ pub fn t<'a>(&self, key: &'a str) -> &'a str {
                 "status_fetching" => "Fetching FAMPP environment status...",
                 "active" => "Active",
                 "stopped" => "Stopped",
-                // --- YENİ EKLENEN İNGİLİZCE KELİMELER ---
                 "service" => "Service",
                 "status" => "Status",
                 "port_info" => "Port / Info",
                 "tip_monitor" => "To monitor a service use:",
                 "tip_boot" => "To boot up your environment use:",
+                "no_active_services" => "No active services",
                 _ => key,
             }
         }

@@ -1,28 +1,44 @@
-use std::path::PathBuf;
-use std::process::Command;
+use indicatif::{ProgressBar, ProgressStyle};
+use reqwest::Client;
+use std::path::Path;
+use tokio::fs::File;
+use tokio::io::AsyncWriteExt;
+use futures_util::StreamExt;
 use std::error::Error;
+use colored::Colorize;
 
-pub async fn download_file(url: &str, dest_path: &PathBuf) -> Result<(), Box<dyn Error>> {
-    println!("🌐 İndiriliyor (Native cURL): {}", url);
+pub async fn download_file(url: &str, dest: &Path) -> Result<(), Box<dyn Error>> {
+    let client = Client::new();
+    let res = client.get(url).send().await?;
+    let total_size = res.content_length().ok_or("Failed to get content length from server")?;
+
+    let pb = ProgressBar::new(total_size);
     
-    let mut cmd = Command::new("curl");
+    pb.set_style(
+        ProgressStyle::with_template(
+            "{spinner:.green} {msg}\n{elapsed_precise} [{wide_bar:.cyan/blue}] {bytes}/{total_bytes} ({bytes_per_sec}, ETA: {eta})"
+        )
+        .unwrap()
+        .progress_chars("█▓▒░ ")
+    );
     
-    cmd.arg("-f")
-       .arg("-L")
-       .arg("-#")
-       .arg("-o")
-       .arg(dest_path.to_str().unwrap())
-       .arg(url);
+    pb.set_message(format!("{} Veri akışı sağlanıyor...", "🌐".cyan()));
 
-    let status = cmd.status()?;
+    let mut file = File::create(dest).await?;
+    let mut downloaded: u64 = 0;
+    
+    let mut stream = res.bytes_stream();
 
-    if status.success() {
-        println!("✅ İndirme tamamlandı: {:?}", dest_path);
-        Ok(())
-    } else {
-        if dest_path.exists() {
-            let _ = std::fs::remove_file(dest_path);
-        }
-        Err(format!("İndirme başarısız oldu. curl çıkış kodu: {}", status.code().unwrap_or(1)).into())
+    while let Some(item) = stream.next().await {
+        let chunk = item?;
+        file.write_all(&chunk).await?;
+        
+        let new = std::cmp::min(downloaded + (chunk.len() as u64), total_size);
+        downloaded = new;
+        pb.set_position(new);
     }
+
+    pb.finish_and_clear();
+
+    Ok(())
 }
