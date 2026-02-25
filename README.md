@@ -4,7 +4,7 @@
 ![License](https://img.shields.io/badge/License-MIT-blue.svg?style=flat-square)
 ![Platform](https://img.shields.io/badge/Platform-macOS%20%7C%20Windows%20%7C%20Linux-lightgrey.svg?style=flat-square)
 
-![FAMPP Banner](Banner.jpg)
+![FAMPP Banner](Banner.png)
 
 FAMPP is an ultra-fast, portable, and fully isolated local web development environment (Local Development Stack) engineered entirely from scratch in Rust. 
 
