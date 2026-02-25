@@ -20,9 +20,11 @@ use clap::{Parser, Subcommand};
 #[derive(Parser)]
 #[command(name = "fampp")]
 #[command(about = "Gereksiz paketlerden arındırılmış, seç-indir mantıklı yerel geliştirme ortamı", long_about = None)]
+#[command(disable_help_subcommand = true)]
+#[command(disable_help_flag = true)]
 struct Cli {
     #[command(subcommand)]
-    command: Commands,
+    command: Option<Commands>,
 }
 
 #[derive(Subcommand)]
@@ -48,6 +50,7 @@ enum Commands {
         #[arg(help = "Paket adı (örn: php, mysql)")]
         package: String,
     },
+    Help,
 }
 
 fn find_executable(dir: &Path, bin_name: &str) -> Option<PathBuf> {
@@ -76,7 +79,9 @@ async fn main() {
     let app_settings = AppSettings::load_or_create(&config.base_path);
     let i18n = I18n::new(&app_settings.language);
 
-    match cli.command {
+    let active_command = cli.command.unwrap_or(Commands::Help);
+
+    match active_command {
         Commands::Install { package, version } => {
             let v = version.as_deref().unwrap_or("latest");
             println!("{} Fetching {} (v{}) from registry...", "📦".cyan(), package.bold().green(), v.yellow());
@@ -329,9 +334,9 @@ async fn main() {
             println!("{}\n", "└──────────────┴──────────────┴─────────┴─────────────────────────┘".cyan());
 
             if any_running {
-                println!("💡 {} {}", i18n.t("tip_monitor"), "'cargo run -- logs <service>'".yellow());
+                println!("💡 {} {}", i18n.t("tip_monitor"), "'fampp logs <service>'".yellow());
             } else {
-                println!("💡 {} {}", i18n.t("tip_boot"), "'cargo run -- start <service>'".yellow());
+                println!("💡 {} {}", i18n.t("tip_boot"), "'fampp start <service>'".yellow());
             }
         }
         Commands::Logs { package } => {
@@ -353,6 +358,45 @@ async fn main() {
             if let Err(e) = tail_cmd.status() {
                 eprintln!("❌ Log izleyici başlatılamadı: {}", e);
             }
+        }
+        Commands::Help => {
+            let ascii_logo = r#"
+ ________  ______   __       __  _______   _______  
+/        |/      \ /  \     /  |/       \ /       \ 
+$$$$$$$$//$$$$$$  |$$  \   /$$ |$$$$$$$  |$$$$$$$  |
+$$ |__   $$ |__$$ |$$$  \ /$$$ |$$ |__$$ |$$ |__$$ |
+$$    |  $$    $$ |$$$$  /$$$$ |$$    $$/ $$    $$/ 
+$$$$$/   $$$$$$$$ |$$ $$ $$/$$ |$$$$$$$/  $$$$$$$/  
+$$ |     $$ |  $$ |$$ |$$$/ $$ |$$ |      $$ |      
+$$ |     $$ |  $$ |$$ | $/  $$ |$$ |      $$ |      
+$$/      $$/   $$/ $$/      $$/ $$/       $$/       
+     
+            "#;
+
+            println!("{}", ascii_logo.cyan().bold());
+            
+            println!("{} {} {}", 
+                i18n.t("help_usage").yellow().bold(), 
+                "fampp".white().bold(), // BURASI DEĞİŞTİ
+                "<command> [args]".green()
+            );
+            
+            println!("\n{}\n", i18n.t("help_commands").yellow().bold());
+
+            let commands = vec![
+                ("install <pkg>", i18n.t("cmd_install")),
+                ("start <pkg>", i18n.t("cmd_start")),
+                ("stop <pkg>", i18n.t("cmd_stop")),
+                ("status", i18n.t("cmd_status")),
+                ("logs <pkg>", i18n.t("cmd_logs")),
+                ("help", i18n.t("cmd_help")),
+            ];
+
+            for (cmd, desc) in commands {
+                println!("  {:<15} {}", cmd.green().bold(), desc);
+            }
+            
+            println!(); 
         }
     }
 }
