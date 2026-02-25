@@ -3,16 +3,20 @@ mod core;
 use std::path::PathBuf;
 use std::path::Path;
 use std::fs;
+use colored::Colorize;
+use comfy_table::{Table, Cell, Color as TColor, Attribute};
+use comfy_table::presets::UTF8_FULL;
+use comfy_table::modifiers::UTF8_ROUND_CORNERS;
 use crate::core::process::ProcessManager;
 use crate::core::config::ConfigManager;
+use crate::core::settings::AppSettings;
+use crate::core::locale::I18n;
 use crate::core::registry::get_package_info;
 use crate::core::downloader;
 use crate::core::extractor;
 
-// Gerekli makroları içeri aktarıyoruz
 use clap::{Parser, Subcommand};
 
-/// Modüler ve Hafif AMP Stack Yöneticisi
 #[derive(Parser)]
 #[command(name = "fampp")]
 #[command(about = "Gereksiz paketlerden arındırılmış, seç-indir mantıklı yerel geliştirme ortamı", long_about = None)]
@@ -23,31 +27,21 @@ struct Cli {
 
 #[derive(Subcommand)]
 enum Commands {
-    /// Yeni bir paket kurar (örn: php, nginx, mariadb)
     Install {
-        /// Kurulacak paketin adı
         package: String,
-        /// Belirli bir versiyon (Varsayılan: latest)
         #[arg(short, long)]
         version: Option<String>,
     },
-    /// Kurulu servisleri başlatır
     Start {
-        /// Tüm servisleri başlatır
         #[arg(short, long)]
         all: bool,
-        /// Sadece belirli bir servisi başlatır
         package: Option<String>,
     },
-    /// Çalışan servisleri durdurur
     Stop {
-        /// Tüm servisleri durdurur
         #[arg(short, long)]
         all: bool,
-        /// Sadece belirli bir servisi durdurur
         package: Option<String>,
     },
-    /// Servislerin güncel çalışma durumunu gösterir
     Status,
     #[command(about = "Servisin anlık loglarını terminalde izler")]
     Logs {
@@ -56,7 +50,6 @@ enum Commands {
     },
 }
 
-/// İlgili dizin içinde hedef binary (exe) dosyasını alt klasörler dahil arar
 fn find_executable(dir: &Path, bin_name: &str) -> Option<PathBuf> {
     if let Ok(entries) = fs::read_dir(dir) {
         for entry in entries.flatten() {
@@ -77,21 +70,19 @@ fn find_executable(dir: &Path, bin_name: &str) -> Option<PathBuf> {
 async fn main() {
     let cli = Cli::parse();
 
-    // Sistemin temel klasörlerini ve ayarlarını başlat
     let config = ConfigManager::new();
     config.init();
 
-    // &cli.command yerine cli.command kullanarak sahipliği (ownership) devralıyoruz.
-    // Böylece bool değerleri pointer yerine doğrudan kullanabiliriz.
+    let app_settings = AppSettings::load_or_create(&config.base_path);
+    let i18n = I18n::new(&app_settings.language);
+
     match cli.command {
         Commands::Install { package, version } => {
             let v = version.as_deref().unwrap_or("latest");
-            println!("🚀 Kurulum başlatılıyor: {} (Versiyon: {})", package, v);
+            println!("{} Fetching {} (v{}) from registry...", "📦".cyan(), package.bold().green(), v.yellow());
 
-            // Registry'den işletim sistemine uygun paket bilgilerini al
             match get_package_info(&package, v) {
                 Some(info) => {
-                    // URL'nin sonuna bakarak uzantıyı belirle (.zip mi, .tar.gz mi, .php mi?)
                     let ext = if info.url.ends_with(".tar.gz") || info.url.ends_with(".tgz") {
                         "tar.gz"
                     } else if info.url.ends_with(".php") {
@@ -100,48 +91,40 @@ async fn main() {
                         "zip"
                     };
                     
-                    // Artık sadece temp_archive_path değil, genel bir dosya yolu (temp_file_path)
                     let temp_file_path = config.base_path.join(format!("{}.{}", package, ext));
                     let package_dir = config.base_path.join("packages").join(&package);
 
-                    // Gerçek URL ile indirme işlemini başlat
                     match downloader::download_file(&info.url, &temp_file_path).await {
                         Ok(_) => {
-                            // --- YENİ EKLENEN KISIM: PAKET TÜRÜNE GÖRE İŞLEM ---
                             if package == "adminer" {
-                                // Adminer tek bir dosyadır, arşive sokmadan doğrudan www içine kopyala
                                 let www_dir = config.base_path.join("www");
                                 if !www_dir.exists() {
                                     std::fs::create_dir_all(&www_dir).unwrap();
                                 }
-                                
                                 let target_path = www_dir.join("adminer.php");
+
                                 if let Err(e) = std::fs::copy(&temp_file_path, &target_path) {
-                                    eprintln!("❌ Adminer kopyalanamadı: {}", e);
+                                    eprintln!("{} Failed to copy Adminer: {}", "❌".red(), e);
                                 } else {
-                                    // Başarılı kopyalamadan sonra ~/.m-amp klasöründeki gereksiz asıl dosyayı sil
                                     let _ = std::fs::remove_file(&temp_file_path);
-                                    println!("✨ Adminer başarıyla 'www/adminer.php' olarak kuruldu!");
-                                    println!("🌐 Arayüze erişmek için PHP'yi başlatıp http://127.0.0.1:8000/adminer.php adresine gidin.");
+                                    println!("{} Adminer configured successfully!", "✨".green().bold());
                                 }
                             } else {
-                                // Diğer tüm paketler (php, mysql vb.) için standart arşivden çıkarma işlemi
                                 if let Err(e) = extractor::extract_archive(&temp_file_path, &package_dir) {
-                                    eprintln!("❌ Çıkarma hatası: {}", e);
+                                    eprintln!("{} Extraction failed: {}", "❌".red(), e);
                                 } else {
-                                    println!("✨ {} başarıyla sisteme entegre edildi!", package);
+                                    println!("{} {} integrated successfully!", "✨".green().bold(), package.to_uppercase().green());
                                 }
                             }
-                            // ---------------------------------------------------
                         }
-                        Err(e) => eprintln!("❌ İndirme hatası: {}", e),
+                        Err(e) => eprintln!("{} Download interrupted: {}", "❌".red(), e),
                     }
                 }
                 None => {
-                    eprintln!("❌ Hata: '{}' paketi sisteminiz için desteklenmiyor veya bulunamadı.", package);
+                    eprintln!("{} Package '{}' is not supported or not found in registry.", "⚠️".yellow(), package.bold());
                 }
             }
-        }       
+        }
         Commands::Start { all: _, package } => {
             let pm = ProcessManager::new(&config.base_path);
             
@@ -169,40 +152,34 @@ async fn main() {
                         }
 
                         let mut args: Vec<String> = Vec::new();
-                        let mut actual_port = 8000; // Varsayılan PHP portumuz
+                        let mut actual_port = app_settings.ports.php;
 
-                        // --- PAKETLERE ÖZEL BAŞLATMA ARGÜMANLARI ---
                         if pkg == "php" {
                             let www_dir = config.base_path.join("www");
-                            
-                            // Akıllı Port Tarayıcı: Boş bir port bulana kadar yukarı doğru tara
+                        
                             while std::net::TcpListener::bind(("127.0.0.1", actual_port)).is_err() {
                                 actual_port += 1;
                             }
 
                             args = vec![
                                 "-S".to_string(),
-                                format!("127.0.0.1:{}", actual_port), // Bulunan boş portu ver
+                                format!("127.0.0.1:{}", actual_port),
                                 "-t".to_string(),
                                 www_dir.to_str().unwrap().to_string(),
                             ];
                         } else if pkg == "mysql" {
                             let db_data_dir = config.base_path.join("data").join("mysql");
-                            
-                            // Gerçek kök dizini (basedir) buluyoruz
-                            // Örn: .../packages/mysql/mysql-8.0.36/bin/mysqld -> .../packages/mysql/mysql-8.0.36/
                             let actual_basedir = bin_path.parent().unwrap().parent().unwrap();
                             
                             if !db_data_dir.exists() {
                                 std::fs::create_dir_all(&db_data_dir).unwrap();
                             }
 
-                            // Data klasörü boşsa MySQL'i ilklendir
                             let is_empty = std::fs::read_dir(&db_data_dir).unwrap().next().is_none();
                             if is_empty {
                                 println!("⏳ MySQL ilk kez hazırlanıyor (Sistem tabloları oluşturuluyor)...");
                                 let mut init_cmd = std::process::Command::new(&bin_path);
-                                init_cmd.arg("--initialize-insecure") // Şifresiz root kullanıcısı
+                                init_cmd.arg("--initialize-insecure")
                                         .arg(format!("--basedir={}", actual_basedir.to_str().unwrap()))
                                         .arg(format!("--datadir={}", db_data_dir.to_str().unwrap()));
                                 
@@ -214,7 +191,6 @@ async fn main() {
                                 println!("✅ MySQL veritabanı dosyaları başarıyla oluşturuldu.");
                             }
 
-                            // MySQL için logs klasörü oluştur ve log parametresini argümanlara ekle
                             let logs_dir = config.base_path.join("logs");
                             if !logs_dir.exists() { std::fs::create_dir_all(&logs_dir).unwrap(); }
                             
@@ -228,21 +204,31 @@ async fn main() {
                             ];
                         }
 
-                        // --- ORTAK BAŞLATMA MANTIĞI ---
                         let args_str: Vec<&str> = args.iter().map(|s| s.as_str()).collect();
                         
-                        println!("🚀 {} servisi başlatılıyor...", pkg);
+                        println!("{} Booting {} engine...", "⚡".cyan(), pkg.bold().green());
+                        
                         match pm.start(&pkg, &bin_path, &args_str) {
                             Ok(pid) => {
-                                println!("✅ {} başarıyla başlatıldı! (PID: {})", pkg, pid);
+                                println!("{} {} {} (PID: {})", 
+                                    "✅".green(), 
+                                    pkg.to_uppercase().bold(), 
+                                    i18n.t("success_start"), 
+                                    pid.to_string().yellow()
+                                );
+                                
                                 if pkg == "php" {
-                                    println!("🌐 Tarayıcıda açın: http://127.0.0.1:{}", actual_port);
-                                    println!("💡 Adminer için: http://127.0.0.1:{}/adminer.php", actual_port);
+                                    println!("   {} http://127.0.0.1:{}", "🌐 Localhost :".cyan().bold(), actual_port);
                                 } else if pkg == "mysql" {
-                                    println!("🗄️  Bağlantı: 127.0.0.1:3306 | Kullanıcı: root | Şifre: (Yok)");
+                                    println!("   {} 127.0.0.1:3306", "🗄️  Host :".blue().bold());
+                                    println!("   {} root", "👤 User :".blue().bold());
+                                    println!("   {} (None)", "🔑 Pass :".blue().bold());
                                 }
+                                println!();
                             }
-                            Err(e) => eprintln!("❌ {}", e),
+                            Err(e) => {
+                                eprintln!("{} Failed to start {}: {}", "❌".red().bold(), pkg.bold(), e.to_string().red());
+                            }
                         }
                     }
                     None => eprintln!("❌ Hata: '{}' paketi desteklenmiyor.", pkg),
@@ -251,23 +237,79 @@ async fn main() {
                 println!("Lütfen bir paket adı belirtin (Örn: php veya mysql).");
             }
         }
-        Commands::Stop { all, package } => {
+        Commands::Stop { all: _, package } => {
             let pm = ProcessManager::new(&config.base_path);
-
+            
             if let Some(pkg) = package {
-                println!("🛑 {} servisi durduruluyor...", pkg);
-                if let Err(e) = pm.stop(&pkg) {
-                    eprintln!("❌ Durdurma hatası: {}", e);
+                println!("{} {} {} engine...", "🛑".red(), i18n.t("halting"), pkg.bold().cyan());
+                
+                match pm.stop(&pkg) {
+                    Ok(_) => {
+                        println!("{} {} {}", 
+                            "✅".green(), 
+                            pkg.to_uppercase().bold(),
+                            i18n.t("success_stop")
+                        );
+                    }
+                    Err(e) => {
+                        eprintln!("{} {}", "⚠️".yellow(), e.to_string().yellow());
+                    }
                 }
-            } else if all {
-                println!("⚠️ Tüm servisleri durdurma özelliği yakında eklenecek.");
             } else {
-                println!("Hata: Lütfen bir paket adı belirtin veya --all bayrağını kullanın.");
+                println!("{} {}", "⚠️".yellow(), i18n.t("specify_stop"));
             }
         }
         Commands::Status => {
+            println!("{} {}", "🔍".cyan().bold(), i18n.t("status_fetching"));
             let pm = ProcessManager::new(&config.base_path);
-            pm.status();
+
+            let mut table = Table::new();
+            table
+                .load_preset(UTF8_FULL)
+                .apply_modifier(UTF8_ROUND_CORNERS)
+                .set_header(vec![
+                    Cell::new(i18n.t("service")).add_attribute(Attribute::Bold).fg(TColor::Cyan),
+                    Cell::new(i18n.t("status")).add_attribute(Attribute::Bold).fg(TColor::Cyan),
+                    Cell::new("PID").add_attribute(Attribute::Bold).fg(TColor::Cyan),
+                    Cell::new(i18n.t("port_info")).add_attribute(Attribute::Bold).fg(TColor::Cyan),
+                ]);
+
+            let services = vec![
+                ("php", format!("127.0.0.1:{}+", app_settings.ports.php)), 
+                ("mysql", format!("127.0.0.1:{}", app_settings.ports.mysql))
+            ];
+
+            let mut any_running = false;
+
+            for (svc, info) in services {
+                let pid_file = pm.pids_dir.join(format!("{}.pid", svc));
+                
+                let mut status_cell = Cell::new("Stopped").fg(TColor::Red);
+                let mut pid_str = "-".to_string();
+
+                if pid_file.exists() {
+                    if let Ok(pid_content) = std::fs::read_to_string(&pid_file) {
+                        status_cell = Cell::new("Active").fg(TColor::Green).add_attribute(Attribute::Bold);
+                        pid_str = pid_content.trim().to_string();
+                        any_running = true;
+                    }
+                }
+
+                table.add_row(vec![
+                    Cell::new(svc.to_uppercase()).add_attribute(Attribute::Bold),
+                    status_cell,
+                    Cell::new(pid_str).fg(TColor::Yellow),
+                    Cell::new(info),
+                ]);
+            }
+
+            println!("\n{table}\n");
+
+            if any_running {
+                println!("💡 {} {}", i18n.t("tip_monitor"), "'cargo run -- logs <service>'".yellow());
+            } else {
+                println!("💡 {} {}", i18n.t("tip_boot"), "'cargo run -- start <service>'".yellow());
+            }
         }
         Commands::Logs { package } => {
             let log_file = config.base_path.join("logs").join(format!("{}.log", package));
@@ -281,12 +323,10 @@ async fn main() {
             println!("🔍 İzleniyor: {} (Çıkış yapmak için Ctrl+C tuşuna basın)", package);
             println!("--------------------------------------------------");
 
-            // İşletim sisteminin kendi "tail -f" komutunu kullanarak anlık akışı terminale bağlıyoruz
             let mut tail_cmd = std::process::Command::new("tail");
             tail_cmd.arg("-f")
                     .arg(log_file.to_str().unwrap());
 
-            // Bu komut, kullanıcı Ctrl+C yapana kadar terminali kilitler ve logları akıtır
             if let Err(e) = tail_cmd.status() {
                 eprintln!("❌ Log izleyici başlatılamadı: {}", e);
             }

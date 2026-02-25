@@ -2,7 +2,6 @@ use serde::{Deserialize, Serialize};
 use std::fs;
 use std::path::PathBuf;
 
-/// Sistemdeki kurulu ve çalışan paketlerin durumunu tutar
 #[derive(Serialize, Deserialize, Debug, Default)]
 pub struct AppState {
     pub installed_packages: Vec<String>,
@@ -14,16 +13,13 @@ pub struct ConfigManager {
 }
 
 impl ConfigManager {
-    /// Yeni bir ConfigManager başlatır ve kök dizini belirler
     pub fn new() -> Self {
         let home = dirs::home_dir().expect("Kullanıcı ana dizini (Home) bulunamadı!");
         let base_path = home.join(".fampp");
         Self { base_path }
     }
 
-    /// Gerekli klasör hiyerarşisini ve state.json dosyasını oluşturur
     pub fn init(&self) {
-        // Oluşturulacak alt klasörler
         let dirs_to_create = ["packages", "www", "data", "logs"];
         
         for dir in dirs_to_create {
@@ -34,7 +30,6 @@ impl ConfigManager {
             }
         }
         
-        // state.json kontrolü ve oluşturulması
         let state_file = self.base_path.join("state.json");
         if !state_file.exists() {
             let default_state = AppState::default();
@@ -46,7 +41,6 @@ impl ConfigManager {
         }
     }
 
-    /// Mevcut durumu state.json'dan okur
     #[allow(dead_code)]
     pub fn load_state(&self) -> AppState {
         let state_file = self.base_path.join("state.json");

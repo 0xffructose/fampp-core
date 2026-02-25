@@ -1,17 +1,15 @@
 use std::env;
 
-/// Bir paketin işletim sistemine özel indirme ve çalıştırma bilgileri
 pub struct PackageInfo {
     #[allow(dead_code)]
     pub name: String,
     pub url: String,
-    pub bin_name: String, // Windows için "php.exe", macOS için "php" vb.
+    pub bin_name: String,
 }
 
-/// İstenen paketin sistem uyumlu bilgilerini döndürür
 pub fn get_package_info(package_name: &str, _version: &str) -> Option<PackageInfo> {
-    let os = env::consts::OS;       // Örn: "macos", "windows", "linux"
-    let arch = env::consts::ARCH;   // Örn: "x86_64", "aarch64"
+    let os = env::consts::OS;
+    let arch = env::consts::ARCH;
 
     match package_name.to_lowercase().as_str() {
         "php" => {
@@ -28,7 +26,7 @@ pub fn get_package_info(package_name: &str, _version: &str) -> Option<PackageInf
                     };
                     (mac_url, "php")
                 },               
-                _ => return None, // Linux veya desteklenmeyen OS
+                _ => return None,
             };
 
             Some(PackageInfo {
@@ -63,7 +61,6 @@ pub fn get_package_info(package_name: &str, _version: &str) -> Option<PackageInf
         "adminer" => {
             Some(PackageInfo {
                 name: package_name.to_string(),
-                // Adminer'ın resmi ve doğrudan indirme linki (Tek bir PHP dosyası)
                 url: "https://github.com/vrana/adminer/releases/download/v4.8.1/adminer-4.8.1.php".to_string(),
                 bin_name: "adminer.php".to_string(),
             })

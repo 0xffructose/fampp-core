@@ -7,10 +7,10 @@ pub async fn download_file(url: &str, dest_path: &PathBuf) -> Result<(), Box<dyn
     
     let mut cmd = Command::new("curl");
     
-    cmd.arg("-f") // Hatalarda sessizce başarısız ol (bozuk dosya kaydetme)
-       .arg("-L") // GitHub'ın yönlendirmelerini (Redirect) takip et
-       .arg("-#") // Terminalde şık bir ilerleme çubuğu göster
-       .arg("-o") // Çıktıyı hedef dosyaya yaz
+    cmd.arg("-f")
+       .arg("-L")
+       .arg("-#")
+       .arg("-o")
        .arg(dest_path.to_str().unwrap())
        .arg(url);
 
