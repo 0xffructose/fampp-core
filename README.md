@@ -14,13 +14,17 @@ Designed for developers who are tired of clunky installation wizards, bloated re
 
 Traditional stacks like XAMPP or Docker can be overkill, resource-heavy, and prone to system conflicts. FAMPP takes a different approach:
 * **Zero Global Pollution:** Everything lives in `~/.fampp`. If you want to uninstall, you simply delete the folder.
+* **Zero External Dependencies:** No need for curl or bulky external formatting crates. FAMPP handles its own async network requests and draws its own pixel-perfect CLI UI natively.
 * **Anti-Corporate Bottlenecks:** Uses a Custom Private Registry to bypass frustrating Oracle WAFs and forced login screens, pulling clean, unmodified binaries directly from a high-speed CDN.
 * **Bare-Metal Performance:** Powered by a Rust CLI, ensuring negligible RAM consumption, instant CLI response times, and a footprint that makes heavy containers look obsolete.
 
 ## ✨ Key Features
 
 - **🦀 Rust-Powered CLI Engine:** A robust, memory-safe daemon and process manager that controls your entire stack with zero overhead.
-- **📦 Smart Downloader & Extractor:** Automatically detects your OS and architecture, downloads the correct binaries (like Apple Silicon vs. Intel), and extracts them intelligently.
+- **🌐 Built-in Asynchronous Downloader:** A custom network engine featuring smooth, colored progress bars (indicatif) showing real-time ETA and transfer speeds without relying on system curl.
+- **⚙️ Global Configuration & Dynamic Ports:** Automatically generates a config.toml file, allowing you to easily customize ports (e.g., changing PHP from 8000 to 9000) and system behaviors.
+- **🌍 Native i18n Localization Engine:** Fully supports multi-language CLI outputs (English and Turkish) directly controlled via the config file.
+- **💅 Premium CLI UX:** Features custom-built Unicode status tables, dynamic loading animations, and a sleek ASCII art help menu—giving you a true "hacker" terminal aesthetic.
 - **🐘 Portable PHP:** Runs a standalone, static PHP engine without interfering with your system's native binaries.
 - **🛠️ Adminer Integration:** Ships with Adminer, a lightning-fast, single-file alternative to phpMyAdmin for instant database management.
 - **🔍 Real-Time Log Tailer:** Stream background service logs (errors, access) directly to your terminal, just like a modern DevOps monitoring tool.
