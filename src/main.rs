@@ -373,7 +373,7 @@ $$/      $$/   $$/ $$/      $$/ $$/       $$/
      
             "#;
 
-            println!("{}", ascii_logo.cyan().bold());
+            println!("{}", ascii_logo.red().bold());
             
             println!("{} {} {}", 
                 i18n.t("help_usage").yellow().bold(), 

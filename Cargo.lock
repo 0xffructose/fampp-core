@@ -428,7 +428,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "famp-core"
+name = "fampp"
 version = "0.1.0"
 dependencies = [
  "clap",
