@@ -49,6 +49,11 @@ enum Commands {
     },
     /// Servislerin güncel çalışma durumunu gösterir
     Status,
+    #[command(about = "Servisin anlık loglarını terminalde izler")]
+    Logs {
+        #[arg(help = "Paket adı (örn: php, mysql)")]
+        package: String,
+    },
 }
 
 /// İlgili dizin içinde hedef binary (exe) dosyasını alt klasörler dahil arar
@@ -164,13 +169,20 @@ async fn main() {
                         }
 
                         let mut args: Vec<String> = Vec::new();
+                        let mut actual_port = 8000; // Varsayılan PHP portumuz
 
                         // --- PAKETLERE ÖZEL BAŞLATMA ARGÜMANLARI ---
                         if pkg == "php" {
                             let www_dir = config.base_path.join("www");
+                            
+                            // Akıllı Port Tarayıcı: Boş bir port bulana kadar yukarı doğru tara
+                            while std::net::TcpListener::bind(("127.0.0.1", actual_port)).is_err() {
+                                actual_port += 1;
+                            }
+
                             args = vec![
                                 "-S".to_string(),
-                                "127.0.0.1:8000".to_string(),
+                                format!("127.0.0.1:{}", actual_port), // Bulunan boş portu ver
                                 "-t".to_string(),
                                 www_dir.to_str().unwrap().to_string(),
                             ];
@@ -202,10 +214,17 @@ async fn main() {
                                 println!("✅ MySQL veritabanı dosyaları başarıyla oluşturuldu.");
                             }
 
+                            // MySQL için logs klasörü oluştur ve log parametresini argümanlara ekle
+                            let logs_dir = config.base_path.join("logs");
+                            if !logs_dir.exists() { std::fs::create_dir_all(&logs_dir).unwrap(); }
+                            
+                            let log_file = logs_dir.join("mysql.log");
+
                             args = vec![
                                 format!("--basedir={}", actual_basedir.to_str().unwrap()),
                                 format!("--datadir={}", db_data_dir.to_str().unwrap()),
                                 "--port=3306".to_string(),
+                                format!("--log-error={}", log_file.to_str().unwrap()) // Hataları dosyaya yazdır!
                             ];
                         }
 
@@ -217,12 +236,13 @@ async fn main() {
                             Ok(pid) => {
                                 println!("✅ {} başarıyla başlatıldı! (PID: {})", pkg, pid);
                                 if pkg == "php" {
-                                    println!("🌐 Tarayıcıda açın: http://127.0.0.1:8000");
+                                    println!("🌐 Tarayıcıda açın: http://127.0.0.1:{}", actual_port);
+                                    println!("💡 Adminer için: http://127.0.0.1:{}/adminer.php", actual_port);
                                 } else if pkg == "mysql" {
                                     println!("🗄️  Bağlantı: 127.0.0.1:3306 | Kullanıcı: root | Şifre: (Yok)");
                                 }
                             }
-                            Err(e) => eprintln!("❌ Başlatma hatası: {}", e),
+                            Err(e) => eprintln!("❌ {}", e),
                         }
                     }
                     None => eprintln!("❌ Hata: '{}' paketi desteklenmiyor.", pkg),
@@ -248,6 +268,28 @@ async fn main() {
         Commands::Status => {
             let pm = ProcessManager::new(&config.base_path);
             pm.status();
+        }
+        Commands::Logs { package } => {
+            let log_file = config.base_path.join("logs").join(format!("{}.log", package));
+
+            if !log_file.exists() {
+                eprintln!("❌ Hata: '{}' için henüz bir log dosyası oluşmamış.", package);
+                eprintln!("💡 İpucu: Önce servisi başlatıp biraz hata üretmesini bekleyin.");
+                return;
+            }
+
+            println!("🔍 İzleniyor: {} (Çıkış yapmak için Ctrl+C tuşuna basın)", package);
+            println!("--------------------------------------------------");
+
+            // İşletim sisteminin kendi "tail -f" komutunu kullanarak anlık akışı terminale bağlıyoruz
+            let mut tail_cmd = std::process::Command::new("tail");
+            tail_cmd.arg("-f")
+                    .arg(log_file.to_str().unwrap());
+
+            // Bu komut, kullanıcı Ctrl+C yapana kadar terminali kilitler ve logları akıtır
+            if let Err(e) = tail_cmd.status() {
+                eprintln!("❌ Log izleyici başlatılamadı: {}", e);
+            }
         }
     }
 }

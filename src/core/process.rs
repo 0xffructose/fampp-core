@@ -1,8 +1,11 @@
-use std::fs::{self, File};
+use std::fs::{self, OpenOptions};
 use std::path::PathBuf;
 use std::process::{Command, Stdio};
-use sysinfo::{Pid, System};
 use std::error::Error;
+use std::time::Duration;
+use std::thread;
+use sysinfo::{Pid, System};
+
 
 pub struct ProcessManager {
     logs_dir: PathBuf,
@@ -21,31 +24,56 @@ impl ProcessManager {
         Self { logs_dir, pids_dir }
     }
 
-    /// Belirtilen çalıştırılabilir dosyayı (binary) arka planda başlatır
-    pub fn start(&self, service_name: &str, bin_path: &PathBuf, args: &[&str]) -> Result<u32, Box<dyn Error>> {
-        let pid_file = self.pids_dir.join(format!("{}.pid", service_name));
-
-        // Eğer servis zaten çalışıyorsa engelle
-        if pid_file.exists() {
-            return Err(format!("{} zaten çalışıyor! Önce durdurmalısınız.", service_name).into());
+    pub fn start(&self, name: &str, bin_path: &PathBuf, args: &[&str]) -> Result<u32, Box<dyn Error>> {
+        // 1. Kendi logs_dir alanımızı kullanarak log klasörünü kontrol et
+        if !self.logs_dir.exists() {
+            std::fs::create_dir_all(&self.logs_dir)?;
         }
+        
+        let log_file_path = self.logs_dir.join(format!("{}.log", name));
 
-        // stdout ve stderr log dosyalarını oluştur
-        let out_log = File::create(self.logs_dir.join(format!("{}_out.log", service_name)))?;
-        let err_log = File::create(self.logs_dir.join(format!("{}_err.log", service_name)))?;
+        // 2. Log dosyasını yazma ve sonuna ekleme modunda aç
+        let log_file = OpenOptions::new()
+            .create(true)
+            .write(true)
+            .append(true)
+            .open(&log_file_path)?;
 
-        // Komutu arka planda (spawn) çalıştır
-        let child = Command::new(bin_path)
+        let log_file_clone = log_file.try_clone()?;
+
+        // 3. Komutu çalıştır ve çıktıları log dosyasına yönlendir (Pipe)
+        let mut child = Command::new(bin_path) // <-- mut eklemeyi unutma
             .args(args)
-            .stdout(Stdio::from(out_log))
-            .stderr(Stdio::from(err_log))
-            .spawn()?; // spawn() terminali kilitlemez, arka planda çalıştırır
+            .stdout(Stdio::from(log_file))
+            .stderr(Stdio::from(log_file_clone))
+            .spawn()?;
+
+        // --- YENİ EKLENEN KISIM: Anında Çökme Kontrolü (Health Check) ---
+        // İşletim sistemine prosesin ayağa kalkması veya port çakışmasından dolayı çökmesi için 100ms süre veriyoruz
+        thread::sleep(Duration::from_millis(100));
+        
+        // Proses kendi kendine hemen sonlandıysa (çöktüyse)
+        if let Ok(Some(status)) = child.try_wait() {
+            return Err(format!(
+                "Servis anında çöktü (Çıkış kodu: {}). Lütfen 'cargo run -- logs {}' ile hatayı inceleyin.",
+                status, name
+            ).into());
+        }
+        // ----------------------------------------------------------------
 
         let pid = child.id();
-        
-        // PID değerini dosyaya yaz
-        fs::write(&pid_file, pid.to_string())?;
 
+        // 4. PID'yi kendi pids_dir alanımızı kullanarak kaydet
+        if !self.pids_dir.exists() {
+            std::fs::create_dir_all(&self.pids_dir)?;
+        }
+        
+        let pid_file = self.pids_dir.join(format!("{}.pid", name));
+        std::fs::write(&pid_file, pid.to_string())?;
+
+        // İŞTE EKSİK VEYA SİLİNMİŞ OLAN KISIM BURASI!
+        // Fonksiyonun başarıyla bittiğini ve PID'yi döndüğünü belirtiyoruz.
+        // Dikkat: Sonunda noktalı virgül (;) OLMAMALI.
         Ok(pid)
     }
 
