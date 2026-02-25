@@ -20,7 +20,6 @@ Traditional stacks like XAMPP or Docker can be overkill, resource-heavy, and pro
 - **🦀 Rust-Powered CLI Engine:** A robust, memory-safe daemon and process manager that controls your entire stack with zero overhead.
 - **📦 Smart Downloader & Extractor:** Automatically detects your OS and architecture, downloads the correct binaries (like Apple Silicon vs. Intel), and extracts them intelligently.
 - **🐘 Portable PHP:** Runs a standalone, static PHP engine without interfering with your system's native binaries.
-- **🐬 WAF-Bypassed MySQL:** Automatically initializes a secure data directory on its first run (`--initialize-insecure`), entirely bypassing Oracle's download restrictions.
 - **🛠️ Adminer Integration:** Ships with Adminer, a lightning-fast, single-file alternative to phpMyAdmin for instant database management.
 - **🔍 Real-Time Log Tailer:** Stream background service logs (errors, access) directly to your terminal, just like a modern DevOps monitoring tool.
 
