@@ -270,19 +270,31 @@ async fn main() {
             
             let pm = ProcessManager::new(&config.base_path);
             
-            let services = vec![
-                ("php", format!("127.0.0.1:{}+", app_settings.ports.php)), 
-                ("mysql", format!("127.0.0.1:{}", app_settings.ports.mysql))
-            ];
+            let services = vec!["php", "mysql"];
 
             let mut any_running = false;
             let mut active_rows = Vec::new();
 
-            for (svc, info) in services {
+            for svc in services {
                 let pid_file = pm.pids_dir.join(format!("{}.pid", svc));
                 
                 if pid_file.exists() {
                     if let Ok(pid_content) = std::fs::read_to_string(&pid_file) {
+
+                        let port_file = pm.pids_dir.join(format!("{}.port", svc));
+                        let actual_port = if let Ok(port_str) = std::fs::read_to_string(&port_file) {
+                            port_str.trim().to_string() // Gerçek portu aldık!
+                        } else {
+                            // Eğer .port dosyası yoksa config.toml'daki varsayılana dön
+                            if svc == "php" {
+                                app_settings.ports.php.to_string()
+                            } else {
+                                app_settings.ports.mysql.to_string()
+                            }
+                        };
+
+                        let info = format!("127.0.0.1:{}", actual_port);
+
                         any_running = true;
                         active_rows.push((
                             svc.to_uppercase(),
@@ -340,23 +352,58 @@ async fn main() {
             }
         }
         Commands::Logs { package } => {
-            let log_file = config.base_path.join("logs").join(format!("{}.log", package));
+            let pkg = package.to_lowercase();
+            
+            let log_file = config.base_path.join("logs").join(format!("{}.log", pkg));
 
             if !log_file.exists() {
-                eprintln!("❌ Hata: '{}' için henüz bir log dosyası oluşmamış.", package);
-                eprintln!("💡 İpucu: Önce servisi başlatıp biraz hata üretmesini bekleyin.");
+                eprintln!("{} {} {}", "⚠️".yellow(), i18n.t("log_not_found"), pkg.bold());
                 return;
             }
 
-            println!("🔍 İzleniyor: {} (Çıkış yapmak için Ctrl+C tuşuna basın)", package);
-            println!("--------------------------------------------------");
+            // --- YENİ ŞIK LOG DASHBOARD TASARIMI ---
+            println!("\n{}", "════════════════════════════════════════════════════════════════".cyan());
+            println!(" {} {} {}", 
+                "📡".green(), 
+                i18n.t("log_live_stream").bold(),
+                pkg.to_uppercase().bold().yellow()
+            );
+            println!(" {} {}", 
+                "🛑".red(), 
+                i18n.t("log_exit_tip").dimmed()
+            );
+            println!("{}\n", "════════════════════════════════════════════════════════════════".cyan());
 
-            let mut tail_cmd = std::process::Command::new("tail");
-            tail_cmd.arg("-f")
-                    .arg(log_file.to_str().unwrap());
+            use std::io::{Read, Seek, SeekFrom};
+            use std::fs::File;
+            use std::thread;
+            use std::time::Duration;
 
-            if let Err(e) = tail_cmd.status() {
-                eprintln!("❌ Log izleyici başlatılamadı: {}", e);
+            if let Ok(mut file) = File::open(&log_file) {
+                let mut buffer = String::new();
+                
+                // Sadece yeni logları ekrana basmak için dosyanın sonuna gidiyoruz
+                let mut pos = file.seek(SeekFrom::End(0)).unwrap_or(0);
+
+                loop {
+                    file.seek(SeekFrom::Start(pos)).unwrap();
+                    buffer.clear();
+                    
+                    if let Ok(bytes_read) = file.read_to_string(&mut buffer) {
+                        if bytes_read > 0 {
+                            // Logları göz yormaması için "bright_black" (Koyu Gri/Soluk) renkte basıyoruz
+                            print!("{}", buffer.bright_black());
+                            io::stdout().flush().unwrap();
+                            
+                            pos += bytes_read as u64;
+                        }
+                    }
+                    
+                    // Akıcı bir okuma için minik gecikme
+                    thread::sleep(Duration::from_millis(300));
+                }
+            } else {
+                eprintln!("{} {}", "❌".red(), i18n.t("log_read_error"));
             }
         }
         Commands::Help => {

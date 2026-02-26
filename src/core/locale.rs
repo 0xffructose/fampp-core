@@ -34,6 +34,10 @@ pub fn t<'a>(&self, key: &'a str) -> &'a str {
                 "cmd_status" => "Tüm servislerin anlık durumunu ve portlarını listeler",
                 "cmd_logs" => "Bir servisin canlı kayıtlarını (stdout/stderr) izler",
                 "cmd_help" => "Bu şık yardım menüsünü ekrana yazdırır",
+                "log_not_found" => "Log dosyası bulunamadı. Servis başlatılmamış olabilir:",
+                "log_live_stream" => "CANLI KAYIT AKIŞI:",
+                "log_exit_tip" => "Çıkış yapmak ve terminale dönmek için Ctrl+C tuşlarına basın",
+                "log_read_error" => "Log dosyası okunamıyor. İzinleri kontrol edin.",
                 _ => key,
             },
             _ => match key { 
@@ -59,6 +63,10 @@ pub fn t<'a>(&self, key: &'a str) -> &'a str {
                 "cmd_status" => "Displays the current status and ports of all services",
                 "cmd_logs" => "Tails the live output (stdout/stderr) of a service",
                 "cmd_help" => "Prints this beautiful help menu",
+                "log_not_found" => "Log file not found. The service may not have been started:",
+                "log_live_stream" => "LIVE LOG STREAM:",
+                "log_exit_tip" => "Press Ctrl+C to exit and return to the terminal",
+                "log_read_error" => "Cannot read the log file. Check permissions.",
                 _ => key,
             }
         }
