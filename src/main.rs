@@ -77,7 +77,7 @@ async fn main() {
     config.init();
 
     let app_settings = AppSettings::load_or_create(&config.base_path);
-    let i18n = I18n::new(&app_settings.language);
+    let i18n = I18n::new(&config.base_path, &app_settings.language);
 
     let active_command = cli.command.unwrap_or(Commands::Help);
 
