@@ -8,14 +8,13 @@
 
 FAMPP is an ultra-fast, portable, and fully isolated local web development environment (Local Development Stack) engineered entirely from scratch in Rust. 
 
-Designed for developers who are tired of clunky installation wizards, bloated registry entries, and restrictive WAF/CDN download walls from corporate entities. FAMPP runs everything within its own self-contained directory without installing any global dependencies on your host operating system.
+Designed for developers who are tired of clunky installation wizards, unwanted service file clutters, and cluttered interfaces. FAMPP runs everything within its own self-contained directory without installing any global dependencies on your host operating system.
 
 ## 🧠 The Philosophy
 
 Traditional stacks like XAMPP or Docker can be overkill, resource-heavy, and prone to system conflicts. FAMPP takes a different approach:
 * **Zero Global Pollution:** Everything lives in `~/.fampp`. If you want to uninstall, you simply delete the folder.
 * **Zero External Dependencies:** No need for curl or bulky external formatting crates. FAMPP handles its own async network requests and draws its own pixel-perfect CLI UI natively.
-* **Anti-Corporate Bottlenecks:** Uses a Custom Private Registry to bypass frustrating Oracle WAFs and forced login screens, pulling clean, unmodified binaries directly from a high-speed CDN.
 * **Bare-Metal Performance:** Powered by a Rust CLI, ensuring negligible RAM consumption, instant CLI response times, and a footprint that makes heavy containers look obsolete.
 
 ## ✨ Key Features
@@ -32,8 +31,7 @@ Traditional stacks like XAMPP or Docker can be overkill, resource-heavy, and pro
 ## 🎯 Perfect For
 
 - Developing rapid local APIs for modern frontends (Next.js, React, Vue).
-- Building robust, lightweight backends for Discord bots or Web3 platforms.
-- Creating local leaderboards, inventory systems, or backend APIs for custom game engines and Unity projects.
+- Building robust, lightweight backends for tools or bots.
 - Developers who build systems from scratch and demand total control over their environment.
 
 ## 🛠️ Installation & Setup
@@ -102,10 +100,16 @@ FAMPP keeps your system clean by confining everything to a single hidden directo
 [x] Real-time Log Tailer
 
 [ ] Traffic Control: Nginx reverse proxy integration for custom .test local domains.
+ 
+[ ] Localization files that are not embedded in the source code
 
-[ ] Full-Stack Expansion: Portable Node.js integration for JavaScript ecosystems.
+[ ] Extended scope (PostgreSQL, MailHog etc.)
 
-[ ] Local Tunneling: Securely expose your local environment to the internet for webhook testing.
+[ ] A well designed UI
+
+<!--[ ] Full-Stack Expansion: Portable Node.js integration for JavaScript ecosystems.
+
+[ ] Local Tunneling: Securely expose your local environment to the internet for webhook testing.-->
 
 # 🤝 Contributing
 FAMPP is an open-source initiative aimed at improving developer quality of life. Pull Requests, bug reports, and feature requests are highly welcome!
